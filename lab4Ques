@@ -1,0 +1,80 @@
+j main
+.data
+input_4x4: .byte 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
+output_4x4: .space 16
+expected_output_4x4: .byte 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1
+.text
+
+#####################
+#a0: input buffer address
+#a1: output buffer address
+#a2: image dimension (Image will be square sized, i.e. total size = a2*a2)
+#####################
+rotation_180:
+############## your code begins here #################
+
+addi $t0, $a2, 0                    # move a2 into t0
+mul $t0, $t0, $t0                     # t0 = t0*t0
+addi $t0, $t0, -1                       # t0 = $t0 - 1 because offset starts with 0 and not 1
+row_matrix:
+    li $t3, 0               # initialize outer-loop counter to 0
+
+outerLoop:
+    bge $t3, $a2, matrixEnd
+
+    li $t4, 0               # initialize inner-loop counter to 0
+
+innerLoop:
+    bge $t4, $a2, innerLoopEnd
+
+    mul $t5, $t3, $a2       # $t5 is i*number_of_columns
+    add $t5, $t5, $t4       # $t5 is i* num_of_columns + j
+    
+    add $t5, $a0, $t5       	# base input address + offset	
+
+    lbu $t7, 0($t5)          # store into t7 number from input array
+    
+    add $t8, $a1, $t0		# output array address where t7 will be stored
+    addi $t0, $t0, -1                     # subtract 1 from offset that gets added to output array
+    
+    sb $t7, 0($t8)		# store pixel into output array
+
+    addiu $t4, $t4, 1       # increment inner-loop counter
+
+    j innerLoop    # branch unconditionally back to beginning of the inner loop
+    
+
+innerLoopEnd:
+    addiu $t3, $t3, 1       # increment outer-loop counter
+
+    j outerLoop    # branch unconditionally back to beginning of the outer loop
+
+matrixEnd:
+
+############## your code ends here ##################
+jr $ra
+#############################
+
+main:
+la $a0, input_4x4
+la $a1, output_4x4
+li $a2, 4
+jal rotation_180
+
+li $t0, 16
+la $t1, output_4x4
+print_4x4:
+lbu $a0, ($t1)
+li $v0, 1
+syscall
+li $v0, 11
+li $a0, 32
+syscall
+addi $t0, $t0, -1
+addi $t1, $t1, 1
+bnez $t0, print_4x4
+
+_end:
+#end program
+li $v0, 10
+syscall
